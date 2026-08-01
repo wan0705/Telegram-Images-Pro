@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>瀑布流 | Telegraph-Image</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<style>
+:root{--bg:#f5f5f5;--surface:#fff;--text:#1a1a1a;--border:#e0e0e0;--text-muted:#888}
+[data-theme="dark"]{--bg:#0d0d0d;--surface:#161616;--text:#e8e8e8;--border:#2a2a2a;--text-muted:#555}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);padding:16px}
+.header{display:flex;justify-content:space-between;align-items:center;max-width:1200px;margin:0 auto 16px}
+.logo{font-size:.95rem;font-weight:600;color:var(--text);text-decoration:none}
+.nav a{padding:5px 12px;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);font-size:.78rem;text-decoration:none}
+.nav a:hover{color:var(--text)}
+.waterfall{column-count:4;column-gap:12px;max-width:1200px;margin:0 auto}
+.item{break-inside:avoid;margin-bottom:12px;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--surface);cursor:pointer}
+.item img{width:100%;height:auto;display:block}
+.load-more{text-align:center;margin:20px auto;max-width:1200px}
+.load-more button{padding:8px 24px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.85rem;cursor:pointer;border-radius:6px}
+.lightbox{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center}
+.lightbox.active{display:flex}
+.lightbox img{max-width:90%;max-height:90%;object-fit:contain}
+@media(max-width:900px){.waterfall{column-count:3}}@media(max-width:640px){.waterfall{column-count:2}}
+</style>
+</head>
+<body>
+<div class="header"><a href="/" class="logo">Telegraph-Image</a><nav class="nav"><a href="/admin">列表</a><a href="/admin-waterfall.html">瀑布流</a></nav></div>
+<div class="waterfall" id="waterfall"></div>
+<div class="load-more" id="loadMoreWrap"><button onclick="loadMore()">加载更多</button></div>
+<div class="lightbox" id="lightbox" onclick="closeLightbox()"><img id="lightboxImg" src="" alt=""></div>
+<script>
+let cursor=null;
+async function loadMore(){try{let url=cursor?'/api/manage/list?cursor='+encodeURIComponent(cursor):'/api/manage/list?limit=100';const res=await fetch(url,{credentials:'include'});if(res.status===401){window.location.href='/login.html';return}const data=await res.json();cursor=data.list_complete?null:data.cursor;const items=data.keys||[];const container=document.getElementById('waterfall');items.forEach(item=>{if(/\.mp4$/i.test(item.name))return;const div=document.createElement('div');div.className='item';div.innerHTML='<img src="/file/'+item.name+'" alt="" loading="lazy" onclick="openLightbox(this.src)">';container.appendChild(div)});if(!cursor)document.getElementById('loadMoreWrap').style.display='none'}catch(err){alert('加载失败')}}
+function openLightbox(src){document.getElementById('lightboxImg').src=src;document.getElementById('lightbox').classList.add('active')}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('active')}
+loadMore();
+</script>
+</body>
+</html>

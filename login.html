@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 | Telegraph-Image</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<style>
+:root{--bg:#f5f5f5;--surface:#fff;--text:#1a1a1a;--text-secondary:#555;--text-muted:#888;--border:#e0e0e0;--accent:#06f;--accent-hover:#05c;--error:#c00;--radius:6px}
+[data-theme="dark"]{--bg:#0d0d0d;--surface:#161616;--text:#e8e8e8;--text-secondary:#999;--text-muted:#555;--border:#2a2a2a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;width:100%;max-width:360px;padding:32px}
+.login-title{font-size:1.1rem;font-weight:600;margin-bottom:24px;text-align:center}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:.8rem;color:var(--text-secondary);margin-bottom:6px}
+.form-input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:.9rem;outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--accent)}
+.btn-submit{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:.85rem;font-weight:500;cursor:pointer;transition:background .15s}
+.btn-submit:hover{background:var(--accent-hover)}
+.error-msg{color:var(--error);font-size:.8rem;margin-top:12px;text-align:center;display:none}
+.back-link{display:block;text-align:center;margin-top:16px;font-size:.8rem;color:var(--text-muted);text-decoration:none}
+.back-link:hover{color:var(--text-secondary)}
+</style>
+</head>
+<body>
+<div class="login-card">
+<div class="login-title">Telegraph-Image 管理后台</div>
+<form id="loginForm">
+<div class="form-group"><label class="form-label">用户名</label><input type="text" class="form-input" id="username" required autocomplete="username"></div>
+<div class="form-group"><label class="form-label">密码</label><input type="password" class="form-input" id="password" required autocomplete="current-password"></div>
+<button type="submit" class="btn-submit">登录</button>
+<div class="error-msg" id="errorMsg"></div>
+</form>
+<a href="/" class="back-link">返回首页</a>
+</div>
+<script>
+document.getElementById('loginForm').addEventListener('submit',async(e)=>{
+e.preventDefault();
+const username=document.getElementById('username').value;
+const password=document.getElementById('password').value;
+const errorMsg=document.getElementById('errorMsg');
+try{
+const res=await fetch('/api/manage/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+if(res.ok){window.location.href='/admin'}else{const data=await res.json().catch(()=>({}));errorMsg.textContent=data.error||'登录失败';errorMsg.style.display='block'}
+}catch(err){errorMsg.textContent='网络错误';errorMsg.style.display='block'}
+});
+</script>
+</body>
+</html>

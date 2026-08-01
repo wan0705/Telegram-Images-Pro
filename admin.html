@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理后台 | Telegraph-Image</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<style>
+:root{--bg:#f5f5f5;--surface:#fff;--surface-hover:#f8f8f8;--text:#1a1a1a;--text-secondary:#555;--text-muted:#888;--border:#e0e0e0;--accent:#06f;--accent-hover:#05c;--accent-soft:rgba(0,102,255,0.06);--error:#c00;--success:#080;--warning:#c80;--radius:6px}
+[data-theme="dark"]{--bg:#0d0d0d;--surface:#161616;--surface-hover:#1e1e1e;--text:#e8e8e8;--text-secondary:#999;--text-muted:#555;--border:#2a2a2a;--accent-soft:rgba(0,102,255,0.1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+.header{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px}
+.header-inner{max-width:1200px;margin:0 auto;height:52px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:.95rem;font-weight:600;color:var(--text);text-decoration:none}
+.nav{display:flex;gap:6px;align-items:center}
+.nav-btn,.nav a{padding:5px 12px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:.78rem;cursor:pointer;border-radius:var(--radius);text-decoration:none;transition:all .15s}
+.nav-btn:hover,.nav a:hover{border-color:var(--border-hover);color:var(--text)}
+.main{max-width:1200px;margin:0 auto;padding:20px}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.search-input{padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:.85rem;outline:none;min-width:200px}
+.search-input:focus{border-color:var(--accent)}
+.btn{padding:6px 14px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);font-size:.78rem;cursor:pointer;border-radius:var(--radius);transition:all .15s}
+.btn:hover{background:var(--surface-hover);color:var(--text)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-danger{color:var(--error);border-color:var(--error)}
+.btn-danger:hover{background:rgba(204,0,0,.05)}
+.btn-warning{color:var(--warning);border-color:var(--warning)}
+.stats{font-size:.8rem;color:var(--text-muted);margin-left:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color .15s}
+.card:hover{border-color:var(--border-hover)}
+.card-media{width:100%;height:140px;background:var(--bg);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer}
+.card-media img,.card-media video{width:100%;height:100%;object-fit:cover}
+.card-media .file-icon{font-size:2rem;color:var(--text-muted)}
+.card-badge{position:absolute;top:6px;right:6px;padding:2px 6px;border-radius:4px;font-size:.65rem;font-weight:600;background:var(--text);color:#fff}
+.card-badge.block{background:var(--error)}
+.card-badge.white{background:var(--success)}
+.card-info{padding:10px}
+.card-name{font-size:.78rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.card-meta{font-size:.7rem;color:var(--text-muted);margin-bottom:8px}
+.card-actions{display:flex;gap:4px;flex-wrap:wrap}
+.card-actions .btn{padding:3px 8px;font-size:.7rem}
+.load-more{text-align:center;margin-top:20px}
+.empty{text-align:center;padding:60px 20px;color:var(--text-muted);font-size:.9rem}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 20px;background:var(--text);color:var(--bg);border-radius:var(--radius);font-size:.8rem;z-index:1000;opacity:0;pointer-events:none;transition:opacity .3s}
+.toast.show{opacity:1}
+@media(max-width:640px){.grid{grid-template-columns:repeat(2,1fr)}.header-inner{padding:0}.main{padding:12px}.toolbar{gap:6px}.search-input{min-width:140px;flex:1}}
+</style>
+</head>
+<body>
+<header class="header"><div class="header-inner"><a href="/" class="logo">Telegraph-Image</a><nav class="nav"><a href="/admin-waterfall.html">瀑布流</a><button class="nav-btn" id="themeBtn">主题</button><button class="nav-btn" id="logoutBtn">退出</button></nav></div></header>
+<main class="main">
+<div class="toolbar">
+<input type="text" class="search-input" id="searchInput" placeholder="搜索文件名...">
+<button class="btn btn-primary" id="searchBtn">搜索</button>
+<button class="btn" id="refreshBtn">刷新</button>
+<span class="stats" id="stats">加载中...</span>
+</div>
+<div class="grid" id="grid"></div>
+<div class="empty" id="empty" style="display:none">暂无数据</div>
+<div class="load-more" id="loadMoreWrap" style="display:none"><button class="btn" id="loadMoreBtn">加载更多</button></div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const themeBtn=document.getElementById('themeBtn');
+if(localStorage.getItem('theme')==='dark')document.documentElement.setAttribute('data-theme','dark');
+themeBtn.addEventListener('click',()=>{const d=document.documentElement.getAttribute('data-theme')==='dark';if(d){document.documentElement.removeAttribute('data-theme');localStorage.setItem('theme','light')}else{document.documentElement.setAttribute('data-theme','dark');localStorage.setItem('theme','dark')}});
+let cursor=null,loading=false,search='';
+const grid=document.getElementById('grid'),empty=document.getElementById('empty'),loadMoreWrap=document.getElementById('loadMoreWrap'),stats=document.getElementById('stats'),toast=document.getElementById('toast');
+let total=0;
+function showToast(msg){toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2000)}
+async function fetchList(){if(loading)return;loading=true;stats.textContent='加载中...';try{let url='/api/manage/list?limit=50';if(cursor)url+='&cursor='+encodeURIComponent(cursor);if(search)url+='&prefix='+encodeURIComponent(search);const res=await fetch(url,{credentials:'include'});if(res.status===401){window.location.href='/login.html';return}if(!res.ok)throw new Error('加载失败');const data=await res.json();const items=data.keys||[];if(!cursor)grid.innerHTML='';if(items.length===0&&!cursor){empty.style.display='block';loadMoreWrap.style.display='none'}else{empty.style.display='none'}items.forEach(item=>renderCard(item));total+=items.length;stats.textContent='共 '+total+' 条';cursor=data.list_complete?null:data.cursor;loadMoreWrap.style.display=cursor?'block':'none'}catch(err){stats.textContent='加载失败';showToast(err.message)}finally{loading=false}}
+function renderCard(item){const name=item.name,meta=item.metadata||{},isImg=/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(name),isVideo=/\.(mp4|webm|mov)$/i.test(name),url='/file/'+name;const card=document.createElement('div');card.className='card';card.id='c-'+name.replace(/[^a-zA-Z0-9]/g,'-');let mediaHtml='';if(isImg)mediaHtml='<img src="'+url+'" alt="" loading="lazy" onclick="preview(\''+url+'\')">';else if(isVideo)mediaHtml='<video src="'+url+'" preload="metadata" onclick="preview(\''+url+'\')"></video>';else mediaHtml='<div class="file-icon">&#128196;</div>';let badge='';if(meta.ListType==='Block')badge='<span class="card-badge block">黑名单</span>';else if(meta.ListType==='White')badge='<span class="card-badge white">白名单</span>';const date=meta.TimeStamp?new Date(meta.TimeStamp).toLocaleDateString():'-';const size=meta.fileSize?formatSize(meta.fileSize):'-';card.innerHTML='<div class="card-media">'+mediaHtml+badge+'</div><div class="card-info"><div class="card-name" title="'+name+'">'+name+'</div><div class="card-meta">'+date+' &middot; '+size+'</div><div class="card-actions"><button class="btn" onclick="copyLink(\''+name+'\')">复制</button><button class="btn btn-warning" onclick="toggleWhite(\''+name+'\',this)">白名单</button><button class="btn btn-danger" onclick="toggleBlock(\''+name+'\',this)">黑名单</button><button class="btn btn-danger" onclick="del(\''+name+'\',this)">删除</button></div></div>';grid.appendChild(card)}
+function formatSize(b){if(b<1024)return b+' B';if(b<1024*1024)return(b/1024).toFixed(1)+' KB';return(b/(1024*1024)).toFixed(1)+' MB'}
+window.preview=(url)=>{window.open(url,'_blank')};
+window.copyLink=async(name)=>{const text=location.origin+'/file/'+name;try{await navigator.clipboard.writeText(text)}catch(e){const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta)}showToast('已复制')};
+async function apiAction(path,name,btn){btn.disabled=true;try{const res=await fetch('/api/manage/'+path+'/'+encodeURIComponent(name),{credentials:'include'});if(!res.ok)throw new Error('操作失败');const data=await res.json();showToast('操作成功');return data}catch(err){showToast(err.message)}finally{btn.disabled=false}}
+window.toggleWhite=(name,btn)=>apiAction('white',name,btn).then(()=>refresh());
+window.toggleBlock=(name,btn)=>apiAction('block',name,btn).then(()=>refresh());
+window.del=(name,btn)=>{if(!confirm('确认删除 '+name+' ?'))return;apiAction('delete',name,btn).then(()=>{const card=document.getElementById('c-'+name.replace(/[^a-zA-Z0-9]/g,'-'));if(card)card.remove()})};
+function refresh(){cursor=null;total=0;grid.innerHTML='';fetchList()}
+document.getElementById('searchBtn').addEventListener('click',()=>{search=document.getElementById('searchInput').value.trim();refresh()});
+document.getElementById('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter'){search=e.target.value.trim();refresh()}});
+document.getElementById('refreshBtn').addEventListener('click',refresh);
+document.getElementById('loadMoreBtn').addEventListener('click',fetchList);
+document.getElementById('logoutBtn').addEventListener('click',async()=>{await fetch('/api/manage/logout',{credentials:'include'});window.location.href='/'});
+fetch('/api/manage/check',{credentials:'include'}).then(r=>r.text()).then(t=>{if(t==='false'||t==='Not using basic auth.'){fetchList()}else if(t==='true'){fetchList()}else{window.location.href='/login.html'}}).catch(()=>window.location.href='/login.html');
+</script>
+</body>
+</html>

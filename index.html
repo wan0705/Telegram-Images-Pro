@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telegraph-Image</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<style>
+:root{--bg:#f5f5f5;--surface:#fff;--surface-hover:#f8f8f8;--text:#1a1a1a;--text-secondary:#555;--text-muted:#888;--border:#e0e0e0;--border-hover:#ccc;--accent:#06f;--accent-hover:#05c;--accent-soft:rgba(0,102,255,0.06);--error:#c00;--success:#080;--radius:6px}
+[data-theme="dark"]{--bg:#0d0d0d;--surface:#161616;--surface-hover:#1e1e1e;--text:#e8e8e8;--text-secondary:#999;--text-muted:#555;--border:#2a2a2a;--border-hover:#3a3a3a;--accent-soft:rgba(0,102,255,0.1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.5;-webkit-tap-highlight-color:transparent}
+.header{position:fixed;top:0;left:0;right:0;padding:14px 28px;display:flex;justify-content:space-between;align-items:center;max-width:720px;margin:0 auto;width:100%}
+.logo{font-size:.95rem;font-weight:600;color:var(--text);text-decoration:none;letter-spacing:-.01em}
+.header-actions{display:flex;gap:6px;align-items:center}
+.header-btn{padding:5px 12px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);font-size:.78rem;cursor:pointer;border-radius:var(--radius);text-decoration:none;transition:border-color .15s,color .15s}
+.header-btn:hover{border-color:var(--border-hover);color:var(--text)}
+.main{width:100%;max-width:560px;padding:0 20px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.upload-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;width:100%;max-height:340px;overflow:hidden;position:relative}
+.state-waiting{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 24px;gap:16px;min-height:220px}
+.drop-zone{width:100%;border:2px dashed var(--border);border-radius:var(--radius);padding:28px 16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:var(--accent-soft)}
+.drop-zone-icon{font-size:1.8rem;color:var(--text-muted);margin-bottom:6px}
+.drop-zone-text{font-size:.85rem;color:var(--text-secondary)}
+.drop-zone-hint{font-size:.72rem;color:var(--text-muted);margin-top:4px}
+.file-input{display:none}
+.btn-primary{padding:8px 22px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:.82rem;font-weight:500;cursor:pointer;transition:background .15s}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.state-queue{display:none;flex-direction:column;padding:14px;gap:6px;max-height:340px;overflow-y:auto}
+.state-queue.active{display:flex}
+.queue-header{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:var(--text-secondary);padding-bottom:6px;border-bottom:1px solid var(--border)}
+.queue-item{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)}
+.queue-item:last-child{border-bottom:none}
+.queue-thumb{width:36px;height:36px;border-radius:var(--radius);object-fit:cover;border:1px solid var(--border);background:var(--bg);flex-shrink:0}
+.queue-info{flex:1;min-width:0}
+.queue-name{font-size:.78rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.queue-meta{font-size:.68rem;color:var(--text-muted)}
+.queue-progress{width:72px;flex-shrink:0}
+.progress-bar{width:100%;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .2s}
+.progress-text{font-size:.65rem;color:var(--text-muted);text-align:right;margin-top:2px}
+.queue-status{width:18px;text-align:center;flex-shrink:0;font-size:.75rem}
+.queue-status.done{color:var(--success)}.queue-status.error{color:var(--error)}.queue-status.waiting{color:var(--text-muted)}
+.state-done{display:none;flex-direction:column;padding:20px;gap:10px}
+.state-done.active{display:flex}
+.done-header{font-size:.85rem;font-weight:600;color:var(--text)}
+.result-list{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto}
+.result-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg)}
+.result-url{flex:1;font-size:.72rem;font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;color:var(--text);border:none;background:transparent;outline:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.result-copy{padding:3px 8px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);font-size:.7rem;cursor:pointer;border-radius:var(--radius);white-space:nowrap;transition:background .15s}
+.result-copy:hover{background:var(--surface-hover)}.result-copy.copied{background:var(--accent);color:#fff;border-color:var(--accent)}
+.format-tabs{display:flex;gap:4px;margin-top:2px}
+.format-tab{padding:3px 10px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);font-size:.72rem;cursor:pointer;border-radius:var(--radius);transition:background .15s,color .15s}
+.format-tab:hover{color:var(--text)}.format-tab.active{background:var(--text);color:var(--surface);border-color:var(--text)}
+.format-content{display:none;margin-top:4px}.format-content.active{display:block}
+.format-textarea{width:100%;min-height:56px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;font-size:.72rem;line-height:1.5;resize:vertical;outline:none}
+.format-textarea:focus{border-color:var(--accent)}
+.done-actions{display:flex;gap:6px;margin-top:2px}
+.btn-small{padding:5px 12px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);font-size:.72rem;cursor:pointer;border-radius:var(--radius);transition:background .15s}
+.btn-small:hover{background:var(--surface-hover);color:var(--text)}
+.btn-danger{padding:5px 12px;border:1px solid var(--error);background:transparent;color:var(--error);font-size:.72rem;cursor:pointer;border-radius:var(--radius);transition:background .15s}
+.btn-danger:hover{background:rgba(204,0,0,.04)}
+.state-error{display:none;flex-direction:column;align-items:center;justify-content:center;padding:36px 24px;gap:10px;text-align:center}
+.state-error.active{display:flex}
+.error-text{font-size:.85rem;color:var(--error)}.error-detail{font-size:.78rem;color:var(--text-secondary)}
+.shortcuts{font-size:.68rem;color:var(--text-muted);text-align:center}
+kbd{display:inline-block;padding:1px 4px;border:1px solid var(--border);border-radius:3px;background:var(--surface);font-family:inherit;font-size:.68rem;color:var(--text-secondary)}
+@media(max-width:480px){.header{padding:10px 14px}.main{padding:0 12px}.state-waiting{padding:24px 14px}.state-queue{padding:10px}.queue-thumb{width:30px;height:30px}.queue-progress{width:52px}}
+</style>
+</head>
+<body>
+<header class="header"><a href="/" class="logo">Telegraph-Image</a><div class="header-actions"><a href="/admin" class="header-btn">管理</a><a href="https://github.com/cf-pages/Telegraph-Image" target="_blank" class="header-btn">GitHub</a><button class="header-btn" id="themeToggle">主题</button></div></header>
+<main class="main">
+<div class="upload-card" id="uploadCard">
+<div class="state-waiting" id="stateWaiting">
+<div class="drop-zone" id="dropZone"><div class="drop-zone-icon">&#8593;</div><div class="drop-zone-text">拖拽文件到此处上传</div><div class="drop-zone-hint">或 <kbd>Ctrl</kbd>+<kbd>V</kbd> 粘贴 / <kbd>Ctrl</kbd>+<kbd>Enter</kbd> 触发</div></div>
+<button class="btn-primary" id="selectBtn">选择文件</button>
+<input type="file" id="fileInput" class="file-input" multiple>
+</div>
+<div class="state-queue" id="stateQueue"><div class="queue-header"><span id="queueTitle">上传队列</span><span id="queueCount">0 / 0</span></div><div id="queueList"></div></div>
+<div class="state-done" id="stateDone">
+<div class="done-header">上传完成</div>
+<div class="result-list" id="resultList"></div>
+<div class="format-tabs"><button class="format-tab active" data-format="url">URL</button><button class="format-tab" data-format="markdown">Markdown</button><button class="format-tab" data-format="html">HTML</button><button class="format-tab" data-format="bbcode">BBCode</button></div>
+<div class="format-content active" id="fmt-url"><textarea class="format-textarea" id="fmtUrlText" readonly></textarea></div>
+<div class="format-content" id="fmt-markdown"><textarea class="format-textarea" id="fmtMdText" readonly></textarea></div>
+<div class="format-content" id="fmt-html"><textarea class="format-textarea" id="fmtHtmlText" readonly></textarea></div>
+<div class="format-content" id="fmt-bbcode"><textarea class="format-textarea" id="fmtBbText" readonly></textarea></div>
+<div class="done-actions"><button class="btn-small" id="copyFmtBtn">复制当前格式</button><button class="btn-small" id="copyAllBtn">复制全部 URL</button><button class="btn-danger" id="resetBtn">重新上传</button></div>
+</div>
+<div class="state-error" id="stateError"><div class="error-text" id="errorText">上传失败</div><div class="error-detail" id="errorDetail"></div><div style="display:flex;gap:8px"><button class="btn-primary" id="retryBtn">重试</button><button class="btn-small" id="errorResetBtn">取消</button></div></div>
+</div>
+<div class="shortcuts"><kbd>Esc</kbd> 重置 &nbsp; <kbd>Ctrl</kbd>+<kbd>Enter</kbd> 上传 &nbsp; <kbd>Ctrl</kbd>+<kbd>V</kbd> 粘贴</div>
+</main>
+<script>
+const themeToggle=document.getElementById('themeToggle');
+if(localStorage.getItem('theme')==='dark')document.documentElement.setAttribute('data-theme','dark');
+themeToggle.addEventListener('click',()=>{const d=document.documentElement.getAttribute('data-theme')==='dark';if(d){document.documentElement.removeAttribute('data-theme');localStorage.setItem('theme','light')}else{document.documentElement.setAttribute('data-theme','dark');localStorage.setItem('theme','dark')}});
+const states={waiting:document.getElementById('stateWaiting'),queue:document.getElementById('stateQueue'),done:document.getElementById('stateDone'),error:document.getElementById('stateError')};
+function switchState(n){Object.values(states).forEach(e=>e.classList.remove('active'));if(states[n])states[n].classList.add('active')}
+let fileQueue=[],uploadResults=[],isUploading=false;
+function formatSize(b){if(b<1024)return b+' B';if(b<1024*1024)return(b/1024).toFixed(1)+' KB';return(b/(1024*1024)).toFixed(1)+' MB'}
+function createQueueItem(file,i){const d=document.createElement('div');d.className='queue-item';d.id='qi-'+i;d.innerHTML='<img class="queue-thumb" id="th-'+i+'" alt=""><div class="queue-info"><div class="queue-name">'+file.name+'</div><div class="queue-meta">'+formatSize(file.size)+'</div></div><div class="queue-progress"><div class="progress-bar"><div class="progress-fill" id="pf-'+i+'" style="width:0%"></div></div><div class="progress-text" id="pt-'+i+'">等待中</div></div><div class="queue-status waiting" id="st-'+i+'">&#9679;</div>';return d}
+function renderQueue(){const list=document.getElementById('queueList');list.innerHTML='';fileQueue.forEach((item,i)=>{list.appendChild(createQueueItem(item.file,i));if(item.file.type.startsWith('image/')){const r=new FileReader();r.onload=e=>{const img=document.getElementById('th-'+i);if(img)img.src=e.target.result};r.readAsDataURL(item.file)}else{const img=document.getElementById('th-'+i);if(img)img.src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect fill="%23eee" width="36" height="36"/><text x="50%" y="55%" text-anchor="middle" fill="%23999" font-size="10">FILE</text></svg>'}});document.getElementById('queueCount').textContent='0 / '+fileQueue.length}
+function updateQueueItem(i,p,s,t){const f=document.getElementById('pf-'+i),tx=document.getElementById('pt-'+i),st=document.getElementById('st-'+i);if(f)f.style.width=p+'%';if(tx)tx.textContent=t;if(st){st.className='queue-status '+s;st.innerHTML=s==='done'?'&#10003;':s==='error'?'&#10007;':'&#9679;'}}
+const fileInput=document.getElementById('fileInput'),dropZone=document.getElementById('dropZone'),selectBtn=document.getElementById('selectBtn');
+selectBtn.addEventListener('click',()=>fileInput.click());dropZone.addEventListener('click',()=>fileInput.click());fileInput.addEventListener('change',e=>handleFiles(e.target.files));
+['dragenter','dragover','dragleave','drop'].forEach(e=>{document.body.addEventListener(e,pe,false);dropZone.addEventListener(e,pe,false)});
+function pe(e){e.preventDefault();e.stopPropagation()}
+['dragenter','dragover'].forEach(e=>dropZone.addEventListener(e,()=>dropZone.classList.add('dragover'),false));
+['dragleave','drop'].forEach(e=>dropZone.addEventListener(e,()=>dropZone.classList.remove('dragover'),false));
+dropZone.addEventListener('drop',e=>{if(e.dataTransfer.files.length)handleFiles(e.dataTransfer.files)});
+function handleFiles(files){const nf=Array.from(files);if(!nf.length)return;nf.forEach(f=>fileQueue.push({file:f,status:'pending'}));switchState('queue');renderQueue();if(!isUploading)startUploadQueue()}
+document.addEventListener('paste',e=>{const items=e.clipboardData.items,files=[];for(let i=0;i<items.length;i++){if(items[i].kind==='file'){const f=items[i].getAsFile();if(f)files.push(f)}}if(files.length)handleFiles(files)});
+async function startUploadQueue(){if(isUploading)return;isUploading=true;uploadResults=[];for(let i=0;i<fileQueue.length;i++){const item=fileQueue[i];if(item.status!=='pending')continue;document.getElementById('queueCount').textContent=(i+1)+' / '+fileQueue.length;updateQueueItem(i,0,'waiting','上传中...');try{const url=await uploadSingleFile(item.file,p=>updateQueueItem(i,p,'waiting',p+'%'));item.status='done';item.url=url;uploadResults.push({name:item.file.name,url});updateQueueItem(i,100,'done','完成')}catch(err){item.status='error';item.error=err.message;updateQueueItem(i,0,'error','失败')}}isUploading=false;if(uploadResults.length>0)showResults();else{const fe=fileQueue.find(f=>f.error);showError(fe?fe.error:'所有文件上传失败',false)}}
+function uploadSingleFile(file,onProgress){return new Promise((resolve,reject)=>{const fd=new FormData();fd.append('file',file);const xhr=new XMLHttpRequest();xhr.upload.addEventListener('progress',e=>{if(e.lengthComputable)onProgress(Math.round(e.loaded/e.total*100))});xhr.addEventListener('load',()=>{if(xhr.status===200){try{let url='';const ct=xhr.getResponseHeader('content-type');if(ct&&ct.includes('application/json')){const r=JSON.parse(xhr.responseText);if(Array.isArray(r)&&r[0])url=r[0].src||r[0].url||r[0];else if(r.src)url=r.src;else if(r.url)url=r.url;else if(r.data)url=r.data.src||r.data.url}else url=xhr.responseText.trim();if(url&&!url.startsWith('http')&&!url.startsWith('//'))url=window.location.origin+(url.startsWith('/')?'':'/')+url;if(url)resolve(url);else reject(new Error('无法获取文件链接'))}catch(e){reject(new Error('解析返回数据失败'))}}else{let m='服务器错误: '+xhr.status;try{const e=JSON.parse(xhr.responseText);if(e.error)m=e.error}catch(x){}reject(new Error(m))}});xhr.addEventListener('error',()=>reject(new Error('网络请求失败')));xhr.addEventListener('timeout',()=>reject(new Error('请求超时')));xhr.open('POST','/upload');xhr.setRequestHeader('Accept','application/json, text/plain, */*');xhr.send(fd)})}
+function showResults(){switchState('done');const list=document.getElementById('resultList');list.innerHTML='';uploadResults.forEach((res,i)=>{const d=document.createElement('div');d.className='result-item';d.innerHTML='<input type="text" class="result-url" value="'+res.url+'" readonly id="ru-'+i+'"><button class="result-copy" id="rc-'+i+'">复制</button>';list.appendChild(d);document.getElementById('rc-'+i).addEventListener('click',function(){copyText(res.url,this)})});updateFormatTextarea()}
+function updateFormatTextarea(){const urls=uploadResults.map(r=>r.url),names=uploadResults.map(r=>r.name);const isV=u=>/\.(mp4|webm|mov)$/i.test(u)||u.includes('video');document.getElementById('fmtUrlText').value=urls.join('\n');document.getElementById('fmtMdText').value=urls.map((u,i)=>isV(u)?'['+names[i]+']('+u+')':'!['+names[i]+']('+u+')').join('\n');document.getElementById('fmtHtmlText').value=urls.map((u,i)=>isV(u)?'<video src="'+u+'" controls></video>':'<img src="'+u+'" alt="'+names[i]+'">').join('\n');document.getElementById('fmtBbText').value=urls.map(u=>isV(u)?'[video]'+u+'[/video]':'[img]'+u+'[/img]').join('\n')}
+document.querySelectorAll('.format-tab').forEach(tab=>{tab.addEventListener('click',()=>{const fmt=tab.dataset.format;document.querySelectorAll('.format-tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');document.querySelectorAll('.format-content').forEach(c=>c.classList.remove('active'));document.getElementById('fmt-'+fmt).classList.add('active')})});
+async function copyText(text,btn){try{await navigator.clipboard.writeText(text)}catch(err){const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta)}if(btn){btn.textContent='已复制';btn.classList.add('copied');setTimeout(()=>{btn.textContent='复制';btn.classList.remove('copied')},1500)}notify('已复制到剪贴板')}
+function notify(msg){if('Notification' in window&&Notification.permission==='granted')new Notification('Telegraph-Image',{body:msg,icon:'/favicon.ico'});else if('Notification' in window&&Notification.permission!=='denied')Notification.requestPermission().then(p=>{if(p==='granted')new Notification('Telegraph-Image',{body:msg,icon:'/favicon.ico'})})}
+document.getElementById('copyFmtBtn').addEventListener('click',()=>{const fmt=document.querySelector('.format-tab.active').dataset.format;const map={url:'fmtUrlText',markdown:'fmtMdText',html:'fmtHtmlText',bbcode:'fmtBbText'};copyText(document.getElementById(map[fmt]).value,document.getElementById('copyFmtBtn'))});
+document.getElementById('copyAllBtn').addEventListener('click',()=>{copyText(uploadResults.map(r=>r.url).join('\n'),document.getElementById('copyAllBtn'))});
+function showError(msg,resetQueue=true){switchState('error');document.getElementById('errorText').textContent='上传失败';document.getElementById('errorDetail').textContent=msg||'请检查网络连接后重试';if(resetQueue){fileQueue=[];uploadResults=[]}}
+document.getElementById('retryBtn').addEventListener('click',()=>{fileQueue.forEach(item=>{if(item.status==='error')item.status='pending'});switchState('queue');renderQueue();if(!isUploading)startUploadQueue()});
+document.getElementById('errorResetBtn').addEventListener('click',resetAll);
+function resetAll(){fileQueue=[];uploadResults=[];isUploading=false;fileInput.value='';document.getElementById('queueList').innerHTML='';document.getElementById('resultList').innerHTML='';['Url','Md','Html','Bb'].forEach(s=>document.getElementById('fmt'+s+'Text').value='');switchState('waiting')}
+document.getElementById('resetBtn').addEventListener('click',resetAll);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();resetAll();return}if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();if(fileQueue.length>0&&!isUploading){switchState('queue');renderQueue();startUploadQueue()}else if(fileQueue.length===0)fileInput.click()}});
+</script>
+</body>
+</html>
