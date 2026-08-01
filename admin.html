@@ -85,8 +85,8 @@ document.getElementById('searchBtn').addEventListener('click',()=>{search=docume
 document.getElementById('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter'){search=e.target.value.trim();refresh()}});
 document.getElementById('refreshBtn').addEventListener('click',refresh);
 document.getElementById('loadMoreBtn').addEventListener('click',fetchList);
-document.getElementById('logoutBtn').addEventListener('click',async()=>{await fetch('/api/manage/logout',{credentials:'include'});window.location.href='/'});
-fetch('/api/manage/check',{credentials:'include'}).then(r=>r.text()).then(t=>{if(t==='false'||t==='Not using basic auth.'){fetchList()}else if(t==='true'){fetchList()}else{window.location.href='/login.html'}}).catch(()=>window.location.href='/login.html');
+document.getElementById('logoutBtn').addEventListener('click',async()=>{await fetch('/api/logout',{credentials:'include'});window.location.href='/'});
+fetch('/api/check',{credentials:'include'}).then(r=>r.text()).then(t=>{if(t==='false'||t==='Not using basic auth.'){fetchList()}else if(t==='true'){fetchList()}else{window.location.href='/login.html'}}).catch(()=>window.location.href='/login.html');
 </script>
 </body>
 </html>
