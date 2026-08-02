@@ -1,4 +1,4 @@
-import { handleCORS, withCORS } from "../../utils/http.js";
+import { handleCORS, withCORS } from "../../../utils/http.js";
 
 export async function onRequest(context) {
     const { request } = context;
