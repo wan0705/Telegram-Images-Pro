@@ -165,11 +165,49 @@ async function moderateFile(env, url, fileId, metadata, response) {
     return { blocked: isBlocked(metadata) };
 }
 
+
+function extensionFromContentType(contentType) {
+    const map = {
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+        'image/avif': 'avif',
+        'image/apng': 'apng',
+        'image/bmp': 'bmp',
+        'image/x-icon': 'ico',
+        'image/svg+xml': 'svg',
+        'video/mp4': 'mp4',
+        'video/x-m4v': 'm4v',
+        'video/quicktime': 'mov',
+        'video/webm': 'webm',
+        'video/ogg': 'ogv',
+        'audio/mpeg': 'mp3',
+        'audio/mp4': 'm4a',
+        'audio/ogg': 'ogg',
+        'audio/wav': 'wav',
+        'audio/flac': 'flac',
+        'audio/aac': 'aac',
+        'application/pdf': 'pdf',
+    };
+    return map[contentType] || null;
+}
+
 function withFileHeaders(response, filename, request) {
     const upstreamType = response.headers.get('Content-Type') || '';
     const correctedType = isUsableContentType(upstreamType) ? null : contentTypeFromFilename(filename);
     const effectiveType = correctedType || upstreamType;
-    const inline = isPreviewableContent(effectiveType) || isPreviewableFilename(filename);
+
+    // 如果 filename 没有扩展名，尝试从 Content-Type 推断一个临时扩展名用于判断
+    let checkFilename = filename;
+    if (!filename.includes('.') && effectiveType) {
+        const ext = extensionFromContentType(effectiveType);
+        if (ext) {
+            checkFilename = filename + '.' + ext;
+        }
+    }
+
+    const inline = isPreviewableContent(effectiveType) || isPreviewableFilename(checkFilename);
 
     // 始终创建新 headers，删除上游可能存在的 attachment
     const headers = new Headers(response.headers);
@@ -183,11 +221,9 @@ function withFileHeaders(response, filename, request) {
         headers.set('Content-Disposition', `inline; filename="${escapeFilename(filename)}"`);
     } else {
         // 非预览文件：删除 Content-Disposition 让浏览器自行决定
-        // 或保持上游的值（如果是下载类文件）
         const upstreamDisp = response.headers.get('Content-Disposition') || '';
         if (upstreamDisp.toLowerCase().includes('attachment')) {
-            // 如果上游是 attachment，保留它（用户确实想下载）
-            // 不做修改
+            // 如果上游是 attachment，保留它
         } else {
             // 否则删除，避免意外下载
             headers.delete('Content-Disposition');
@@ -212,6 +248,7 @@ function withFileHeaders(response, filename, request) {
         headers,
     });
 }
+
 
 function isUsableContentType(contentType) {
     return contentType !== '' && !contentType.startsWith('application/octet-stream');
