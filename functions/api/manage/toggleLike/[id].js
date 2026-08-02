@@ -1,5 +1,5 @@
 import { updateMetadata } from "../../../utils/metadata.js";
-import { jsonResponse, textResponse, handleCORS, withCORS } from "../../utils/http.js";
+import { jsonResponse, textResponse, handleCORS, withCORS } from "../../../utils/http.js";
 
 export async function onRequest(context) {
     // 处理 OPTIONS 预检请求
