@@ -1,7 +1,7 @@
-import { jsonResponse } from "../../../utils/http.js";
+import { jsonResponse } from "../utils/http.js";
 import { getMetadata } from "../../../utils/metadata.js";
 import { deleteShortLink } from "../../../utils/shortlink.js";
-import { handleCORS, withCORS } from "../../utils/http.js";
+import { handleCORS, withCORS } from "../utils/http.js";
 
 export async function onRequest(context) {
     // 处理 OPTIONS 预检请求

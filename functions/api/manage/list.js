@@ -1,4 +1,4 @@
-import { jsonResponse, handleCORS, withCORS } from "../../utils/http.js";
+import { jsonResponse, handleCORS, withCORS } from "../utils/http.js";
 import { isInternalKey } from "../../utils/kv-keys.js";
 
 export async function onRequest(context) {

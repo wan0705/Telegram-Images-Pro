@@ -1,4 +1,4 @@
-import { isEmptyBinding, jsonResponse, handleCORS, withCORS } from '../utils/http.js';
+import { isEmptyBinding, jsonResponse, handleCORS, withCORS } from "../utils/http.js";
 import { isShortUrlsEnabled } from '../utils/shortlink.js';
 import { getSetupStatus } from '../utils/setup-status.js';
 

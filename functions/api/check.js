@@ -1,4 +1,4 @@
-import { jsonResponse, handleCORS, withCORS, textResponse, handleCORS, withCORS } from "../utils/http.js";
+import { jsonResponse, handleCORS, withCORS, textResponse } from "../utils/http.js";
 
 async function sha256(message) {
     const msgBuffer = new TextEncoder().encode(message);

@@ -1,6 +1,6 @@
 import { LIST_TYPE, updateMetadata } from "../../../utils/metadata.js";
-import { jsonResponse } from "../../../utils/http.js";
-import { handleCORS, withCORS } from "../../utils/http.js";
+import { jsonResponse } from "../utils/http.js";
+import { handleCORS, withCORS } from "../utils/http.js";
 
 export async function onRequest(context) {
     // 处理 OPTIONS 预检请求
