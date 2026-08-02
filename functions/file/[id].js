@@ -207,7 +207,13 @@ function withFileHeaders(response, filename, request) {
         }
     }
 
-    const inline = isPreviewableContent(effectiveType) || isPreviewableFilename(checkFilename);
+    let inline = isPreviewableContent(effectiveType) || isPreviewableFilename(checkFilename);
+
+    // 如果还是无法判断（没有扩展名、没有 Content-Type），默认允许预览
+    // 这样至少图片能在浏览器中显示，而不是直接下载
+    if (!inline && !filename.includes('.') && !effectiveType) {
+        inline = true;
+    }
 
     // 始终创建新 headers，删除上游可能存在的 attachment
     const headers = new Headers(response.headers);
@@ -248,6 +254,7 @@ function withFileHeaders(response, filename, request) {
         headers,
     });
 }
+
 
 
 function isUsableContentType(contentType) {
