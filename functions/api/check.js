@@ -7,10 +7,12 @@ async function sha256(message) {
 }
 
 export async function onRequest(context) {
+    const { env, request } = context;
+
     // 处理 OPTIONS 预检请求
     const corsResponse = handleCORS(request);
     if (corsResponse) return corsResponse;
-    const { env, request } = context;
+
     if (typeof env.BASIC_USER === "undefined" || env.BASIC_USER == null || env.BASIC_USER === "") {
         return withCORS(textResponse('Not using basic auth.', { status: 200 }), request);
     }

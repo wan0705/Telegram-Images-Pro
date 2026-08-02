@@ -37,23 +37,30 @@ export async function onRequest(context) {
     // If the response is OK, proceed with further checks
     if (!response.ok) return withCORS(response, request);
 
+    // 获取 metadata（提前到这里）
+    let metadata = null;
+    if (env.img_url) {
+        metadata = await getOrCreateMetadata(env, fileId);
+    }
+
+    // 使用原始文件名判断文件类型，而不是 fileId（可能是短链接）
+    const displayName = metadata?.fileName || fileId;
+
     // Allow the admin page to directly view the image
     const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
     if (isAdmin) {
-        return withFileHeaders(response, fileId, request);
+        return withFileHeaders(response, displayName, request);
     }
 
     // Check if KV storage is available
     if (!env.img_url) {
         console.log("KV storage not available, returning image directly");
-        return withFileHeaders(response, fileId, request);
+        return withFileHeaders(response, displayName, request);
     }
-
-    const metadata = await getOrCreateMetadata(env, fileId);
 
     // Handle based on ListType and Label
     if (isWhitelisted(metadata)) {
-        return withFileHeaders(response, fileId, request);
+        return withFileHeaders(response, displayName, request);
     } else if (isBlocked(metadata)) {
         const referer = request.headers.get('Referer');
         const redirectUrl = referer ? "https://static-res.pages.dev/teleimage/img-block-compressed.png" : `${url.origin}/block-img.html`;
@@ -77,8 +84,9 @@ export async function onRequest(context) {
     await putMetadata(env, fileId, metadata);
 
     // Return file content
-    return withFileHeaders(response, fileId, request);
+    return withFileHeaders(response, displayName, request);
 }
+
 
 // Short ids are resolved before the file URL is built, so short links work for
 // Telegraph-stored files as well as Bot API files.

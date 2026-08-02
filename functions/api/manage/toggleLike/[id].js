@@ -2,6 +2,7 @@ import { updateMetadata } from "../../../utils/metadata.js";
 import { jsonResponse, textResponse, handleCORS, withCORS } from "../../../utils/http.js";
 
 export async function onRequest(context) {
+    const { request } = context;
     // 处理 OPTIONS 预检请求
     const corsResponse = handleCORS(request);
     if (corsResponse) return corsResponse;

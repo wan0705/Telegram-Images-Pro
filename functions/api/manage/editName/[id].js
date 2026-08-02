@@ -3,9 +3,11 @@ import { jsonResponse, textResponse, handleCORS, withCORS } from "../../../utils
 
 export async function onRequest(context) {
     // 处理 OPTIONS 预检请求
+    const { request, params, env } = context;
+
+    // 处理 OPTIONS 预检请求
     const corsResponse = handleCORS(request);
     if (corsResponse) return corsResponse;
-    const { request, params, env } = context;
 
     const url = new URL(request.url);
     const fileName = url.searchParams.get('newName') || params.name;

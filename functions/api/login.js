@@ -7,10 +7,12 @@ async function sha256(message) {
 }
 
 export async function onRequest(context) {
+    const { request, env } = context;
+
     // 处理 OPTIONS 预检请求
     const corsResponse = handleCORS(request);
     if (corsResponse) return corsResponse;
-    const { request, env } = context;
+
     if (request.method !== 'POST') {
         return withCORS(new Response('Method Not Allowed', { status: 405 }), request);
     }

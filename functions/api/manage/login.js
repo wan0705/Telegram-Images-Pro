@@ -1,19 +1,14 @@
+import { handleCORS, withCORS } from "../../utils/http.js";
+
 export async function onRequest(context) {
+    const { request, env } = context;
+
     // 处理 OPTIONS 预检请求
     const corsResponse = handleCORS(request);
     if (corsResponse) return corsResponse;
-    // Contents of context object
-    const {
-      request, // same as existing Worker API
-      env, // same as existing Worker API
-      params, // if filename includes [id] or [[path]]
-      waitUntil, // same as ctx.waitUntil in existing Worker API
-      next, // used for middleware or to fetch assets
-      data, // arbitrary space for passing data between middlewares
-    } = context;
+
     //get the request url
     const url = new URL(request.url);
     //redirect to admin page
-    return Response.redirect(url.origin+"/admin.html", 302)
-
-  }
+    return withCORS(Response.redirect(url.origin+"/admin.html", 302), request);
+}
