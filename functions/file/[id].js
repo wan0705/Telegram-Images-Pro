@@ -8,7 +8,7 @@ import {
 import { isShortUrlsEnabled, looksLikeShortId, resolveShortId } from "../utils/shortlink.js";
 import { getServingProvider } from "../storage/index.js";
 import { getModerationProvider } from "../moderation/index.js";
-import { handleCORS, withCORS } from "./utils/http.js";
+import { handleCORS, withCORS } from "../utils/http.js";
 
 export async function onRequest(context) {
     const {
