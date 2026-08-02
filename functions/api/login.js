@@ -1,3 +1,5 @@
+import { jsonResponse } from "../utils/http.js";
+
 async function sha256(message) {
     const msgBuffer = new TextEncoder().encode(message);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -13,24 +15,18 @@ export async function onRequest(context) {
         const body = await request.json();
         const { username, password } = body || {};
         if (!username || !password) {
-            return new Response(JSON.stringify({ error: '请输入用户名和密码' }), {
-                status: 400, headers: { 'Content-Type': 'application/json' }
-            });
+            return jsonResponse({ error: '请输入用户名和密码' }, { status: 400 });
         }
         if (username !== env.BASIC_USER || password !== env.BASIC_PASS) {
-            return new Response(JSON.stringify({ error: '用户名或密码错误' }), {
-                status: 401, headers: { 'Content-Type': 'application/json' }
-            });
+            return jsonResponse({ error: '用户名或密码错误' }, { status: 401 });
         }
         const token = await sha256(env.BASIC_USER + ':' + env.BASIC_PASS + ':telegraph-image');
         const cookie = `admin_token=${token}; HttpOnly; Path=/; Max-Age=86400; SameSite=Lax`;
-        return new Response(JSON.stringify({ success: true }), {
+        return jsonResponse({ success: true }, {
             status: 200,
-            headers: { 'Content-Type': 'application/json', 'Set-Cookie': cookie }
+            headers: { 'Set-Cookie': cookie }
         });
     } catch (err) {
-        return new Response(JSON.stringify({ error: '请求格式错误' }), {
-            status: 400, headers: { 'Content-Type': 'application/json' }
-        });
+        return jsonResponse({ error: '请求格式错误' }, { status: 400 });
     }
 }

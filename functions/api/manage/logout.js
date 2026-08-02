@@ -1,7 +1,13 @@
 export async function onRequest(context) {
-    const cookie = 'admin_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax';
-    return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', 'Set-Cookie': cookie }
-    });
-}
+    // Contents of context object
+    const {
+      request, // same as existing Worker API
+      env, // same as existing Worker API
+      params, // if filename includes [id] or [[path]]
+      waitUntil, // same as ctx.waitUntil in existing Worker API
+      next, // used for middleware or to fetch assets
+      data, // arbitrary space for passing data between middlewares
+    } = context;
+    return new Response('Logged out.', { status: 401 });
+
+  }

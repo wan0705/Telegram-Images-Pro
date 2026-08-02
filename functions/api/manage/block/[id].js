@@ -1,10 +1,12 @@
+import { LIST_TYPE, updateMetadata } from "../../../utils/metadata.js";
+import { jsonResponse } from "../../../utils/http.js";
+
 export async function onRequest(context) {
     const { env, params } = context;
-    const value = await env.img_url.getWithMetadata(params.id);
-    if (!value.metadata) {
-        return new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
-    }
-    value.metadata.ListType = "Block";
-    await env.img_url.put(params.id, "", { metadata: value.metadata });
-    return new Response(JSON.stringify(value.metadata), { headers: { 'Content-Type': 'application/json' } });
+    const metadata = await updateMetadata(env, params.id, current => {
+        current.ListType = LIST_TYPE.BLOCK;
+        return current;
+    });
+
+    return jsonResponse(metadata);
 }

@@ -1,12 +1,17 @@
+import { jsonResponse, textResponse } from "../../../utils/http.js";
+import { updateMetadata } from "../../../utils/metadata.js";
+
 export async function onRequest(context) {
     const { params, env } = context;
-    const value = await env.img_url.getWithMetadata(params.id);
-    if (!value.metadata) {
-        return new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
-    }
-    value.metadata.liked = !value.metadata.liked;
-    await env.img_url.put(params.id, "", { metadata: value.metadata });
-    return new Response(JSON.stringify({ success: true, liked: value.metadata.liked }), {
-        headers: { 'Content-Type': 'application/json' }
+
+    const metadata = await updateMetadata(env, params.id, current => {
+        current.liked = !current.liked;
+        return current;
     });
+
+    if (!metadata) {
+        return textResponse(`Image metadata not found for ID: ${params.id}`, { status: 404 });
+    }
+
+    return jsonResponse({ success: true, liked: metadata.liked });
 }
