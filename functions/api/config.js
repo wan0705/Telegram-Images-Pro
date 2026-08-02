@@ -1,4 +1,4 @@
-import { isEmptyBinding, jsonResponse } from '../utils/http.js';
+import { isEmptyBinding, jsonResponse, handleCORS, withCORS } from '../utils/http.js';
 import { isShortUrlsEnabled } from '../utils/shortlink.js';
 import { getSetupStatus } from '../utils/setup-status.js';
 
@@ -8,7 +8,7 @@ export async function onRequestGet(context) {
     const { env } = context;
     const setup = getSetupStatus(env);
 
-    return jsonResponse({
+    return withCORS(jsonResponse({
         siteName: env.SITE_NAME || 'Telegraph-Image',
         siteTitle: env.SITE_TITLE || env.SITE_NAME || 'Telegraph-Image | 免费图床',
         backgroundImage: env.SITE_BACKGROUND || '',
@@ -22,5 +22,5 @@ export async function onRequestGet(context) {
         problems: setup.problems,
     }, {
         headers: { 'Cache-Control': 'no-store' },
-    });
+    }), request);
 }

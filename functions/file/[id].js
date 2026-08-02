@@ -8,6 +8,7 @@ import {
 import { isShortUrlsEnabled, looksLikeShortId, resolveShortId } from "../utils/shortlink.js";
 import { getServingProvider } from "../storage/index.js";
 import { getModerationProvider } from "../moderation/index.js";
+import { handleCORS, withCORS } from "../utils/http.js";
 
 export async function onRequest(context) {
     const {
@@ -16,55 +17,59 @@ export async function onRequest(context) {
         params,
     } = context;
 
+    // 处理 OPTIONS 预检请求
+    const corsResponse = handleCORS(request);
+    if (corsResponse) return corsResponse;
+
     const url = new URL(request.url);
 
     // Anti-hotlinking: reject disallowed referers before spending upstream bandwidth
     if (!isRefererAllowed(env, request, url)) {
-        return new Response('Hotlinking is not allowed on this deployment.', {
+        return withCORS(new Response('Hotlinking is not allowed on this deployment.', {
             status: 403,
             headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-        });
+        }), request);
     }
 
     const fileId = await resolveRequestedId(env, params.id);
     const response = await getServingProvider(fileId).fetchFile(env, request, url, fileId);
 
     // If the response is OK, proceed with further checks
-    if (!response.ok) return response;
+    if (!response.ok) return withCORS(response, request);
 
     // Allow the admin page to directly view the image
     const isAdmin = request.headers.get('Referer')?.includes(`${url.origin}/admin`);
     if (isAdmin) {
-        return withFileHeaders(response, fileId);
+        return withFileHeaders(response, fileId, request);
     }
 
     // Check if KV storage is available
     if (!env.img_url) {
         console.log("KV storage not available, returning image directly");
-        return withFileHeaders(response, fileId);  // Directly return image response, terminate execution
+        return withFileHeaders(response, fileId, request);
     }
 
     const metadata = await getOrCreateMetadata(env, fileId);
 
     // Handle based on ListType and Label
     if (isWhitelisted(metadata)) {
-        return withFileHeaders(response, fileId);
+        return withFileHeaders(response, fileId, request);
     } else if (isBlocked(metadata)) {
         const referer = request.headers.get('Referer');
         const redirectUrl = referer ? "https://static-res.pages.dev/teleimage/img-block-compressed.png" : `${url.origin}/block-img.html`;
-        return Response.redirect(redirectUrl, 302);
+        return withCORS(Response.redirect(redirectUrl, 302), request);
     }
 
     // Check if WhiteList_Mode is enabled
     if (env.WhiteList_Mode === "true") {
-        return Response.redirect(`${url.origin}/whitelist-on.html`, 302);
+        return withCORS(Response.redirect(`${url.origin}/whitelist-on.html`, 302), request);
     }
 
     // If no metadata or further actions required, moderate content and add to KV if needed
     const moderationResult = await moderateFile(env, url, fileId, metadata, response);
     if (moderationResult.blocked) {
         await putMetadata(env, fileId, metadata);
-        return Response.redirect(`${url.origin}/block-img.html`, 302);
+        return withCORS(Response.redirect(`${url.origin}/block-img.html`, 302), request);
     }
 
     // Only save metadata if content is not adult content
@@ -72,7 +77,7 @@ export async function onRequest(context) {
     await putMetadata(env, fileId, metadata);
 
     // Return file content
-    return withFileHeaders(response, fileId);
+    return withFileHeaders(response, fileId, request);
 }
 
 // Short ids are resolved before the file URL is built, so short links work for
@@ -152,23 +157,46 @@ async function moderateFile(env, url, fileId, metadata, response) {
     return { blocked: isBlocked(metadata) };
 }
 
-function withFileHeaders(response, filename) {
+function withFileHeaders(response, filename, request) {
     const upstreamType = response.headers.get('Content-Type') || '';
     const correctedType = isUsableContentType(upstreamType) ? null : contentTypeFromFilename(filename);
     const effectiveType = correctedType || upstreamType;
     const inline = isPreviewableContent(effectiveType) || isPreviewableFilename(filename);
 
-    if (!correctedType && !inline) {
-        return response;
-    }
-
+    // 始终创建新 headers，删除上游可能存在的 attachment
     const headers = new Headers(response.headers);
+
     if (correctedType) {
         headers.set('Content-Type', correctedType);
     }
+
     if (inline) {
+        // 强制 inline，覆盖上游可能的 attachment
         headers.set('Content-Disposition', `inline; filename="${escapeFilename(filename)}"`);
+    } else {
+        // 非预览文件：删除 Content-Disposition 让浏览器自行决定
+        // 或保持上游的值（如果是下载类文件）
+        const upstreamDisp = response.headers.get('Content-Disposition') || '';
+        if (upstreamDisp.toLowerCase().includes('attachment')) {
+            // 如果上游是 attachment，保留它（用户确实想下载）
+            // 不做修改
+        } else {
+            // 否则删除，避免意外下载
+            headers.delete('Content-Disposition');
+        }
     }
+
+    // 添加 CORS 头
+    const corsHeaders = new Headers();
+    const origin = request.headers.get('Origin') || '*';
+    corsHeaders.set('Access-Control-Allow-Origin', origin);
+    corsHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    corsHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    corsHeaders.set('Access-Control-Allow-Credentials', 'true');
+    corsHeaders.set('Access-Control-Max-Age', '86400');
+    corsHeaders.forEach((value, key) => {
+        headers.set(key, value);
+    });
 
     return new Response(response.body, {
         status: response.status,

@@ -1,4 +1,7 @@
 export async function onRequest(context) {
+    // 处理 OPTIONS 预检请求
+    const corsResponse = handleCORS(request);
+    if (corsResponse) return corsResponse;
     // Contents of context object
     const {
       request, // same as existing Worker API
@@ -8,6 +11,6 @@ export async function onRequest(context) {
       next, // used for middleware or to fetch assets
       data, // arbitrary space for passing data between middlewares
     } = context;
-    return new Response('Logged out.', { status: 401 });
+    return withCORS(new Response('Logged out.', { status: 401 }), request);
 
   }

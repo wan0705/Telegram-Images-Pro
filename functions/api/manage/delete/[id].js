@@ -1,8 +1,12 @@
 import { jsonResponse } from "../../../utils/http.js";
 import { getMetadata } from "../../../utils/metadata.js";
 import { deleteShortLink } from "../../../utils/shortlink.js";
+import { handleCORS, withCORS } from "../../utils/http.js";
 
 export async function onRequest(context) {
+    // 处理 OPTIONS 预检请求
+    const corsResponse = handleCORS(request);
+    if (corsResponse) return corsResponse;
     const { env, params } = context;
 
     const metadata = await getMetadata(env, params.id);
@@ -12,5 +16,5 @@ export async function onRequest(context) {
         await deleteShortLink(env, metadata.shortId);
     }
 
-    return jsonResponse(params.id);
+    return withCORS(jsonResponse(params.id), request);
 }

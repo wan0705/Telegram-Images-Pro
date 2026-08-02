@@ -1,7 +1,10 @@
-import { jsonResponse } from "../../utils/http.js";
+import { jsonResponse, handleCORS, withCORS } from "../../utils/http.js";
 import { isInternalKey } from "../../utils/kv-keys.js";
 
 export async function onRequest(context) {
+    // 处理 OPTIONS 预检请求
+    const corsResponse = handleCORS(request);
+    if (corsResponse) return corsResponse;
   const { request, env } = context;
   const url = new URL(request.url);
 
@@ -14,9 +17,9 @@ export async function onRequest(context) {
   const prefix = url.searchParams.get("prefix") || undefined;
   const value = await env.img_url.list({ limit, cursor, prefix });
 
-  return jsonResponse({
+  return withCORS(jsonResponse({
     ...value,
     // Hide internal bookkeeping keys (short links, caches) from the file list
     keys: value.keys.filter(key => !isInternalKey(key.name)),
-  });
+  }), request);
 }

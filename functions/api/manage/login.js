@@ -1,4 +1,7 @@
 export async function onRequest(context) {
+    // 处理 OPTIONS 预检请求
+    const corsResponse = handleCORS(request);
+    if (corsResponse) return corsResponse;
     // Contents of context object
     const {
       request, // same as existing Worker API

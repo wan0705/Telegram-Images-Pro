@@ -1,7 +1,11 @@
 import { jsonResponse, textResponse } from "../../../utils/http.js";
 import { updateMetadata } from "../../../utils/metadata.js";
+import { handleCORS, withCORS } from "../../utils/http.js";
 
 export async function onRequest(context) {
+    // 处理 OPTIONS 预检请求
+    const corsResponse = handleCORS(request);
+    if (corsResponse) return corsResponse;
     const { request, params, env } = context;
 
     const url = new URL(request.url);
@@ -12,8 +16,8 @@ export async function onRequest(context) {
     });
 
     if (!metadata) {
-        return textResponse(`Image metadata not found for ID: ${params.id}`, { status: 404 });
+        return withCORS(textResponse(`Image metadata not found for ID: ${params.id}`, { status: 404 }), request);
     }
 
-    return jsonResponse({ success: true, fileName: metadata.fileName });
+    return withCORS(jsonResponse({ success: true, fileName: metadata.fileName }), request);
 }

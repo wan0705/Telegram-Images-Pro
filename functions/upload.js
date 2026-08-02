@@ -1,6 +1,6 @@
 import { errorHandling, telemetryData } from "./utils/middleware.js";
 import { authenticateUploadRequest } from "./utils/auth.js";
-import { jsonResponse } from "./utils/http.js";
+import { jsonResponse, handleCORS, withCORS } from "./utils/http.js";
 import { createDefaultMetadata, putMetadata } from "./utils/metadata.js";
 import { allocateShortId, isShortUrlsEnabled, putShortLink } from "./utils/shortlink.js";
 import { getUploadProvider } from "./storage/index.js";
@@ -8,10 +8,14 @@ import { getUploadProvider } from "./storage/index.js";
 export async function onRequestPost(context) {
     const { request, env } = context;
 
+    // 处理 OPTIONS 预检
+    const corsResponse = handleCORS(request);
+    if (corsResponse) return corsResponse;
+
     try {
         const authResponse = authenticateUploadRequest(request, env);
         if (authResponse) {
-            return authResponse;
+            return withCORS(authResponse, request);
         }
 
         const provider = getUploadProvider(env);
@@ -52,9 +56,9 @@ export async function onRequestPost(context) {
             }
         }
 
-        return jsonResponse([{ 'src': `/file/${shortId || longId}` }]);
+        return withCORS(jsonResponse([{ 'src': `/file/${shortId || longId}` }]), request);
     } catch (error) {
         console.error('Upload error:', error);
-        return jsonResponse({ error: error.message }, { status: 500 });
+        return withCORS(jsonResponse({ error: error.message }, { status: 500 }), request);
     }
 }
